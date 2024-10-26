@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Media;
@@ -17,33 +17,68 @@ using Cosmos.Core.IOGroup;
 using Cosmos.HAL.Drivers.PCI.Audio;
 using Cosmos.System.Audio.IO;
 using Cosmos.System.Audio;
+using Cosmos.HAL.Audio;
+using IL2CPU.API.Attribs;
+using Cosmos.System.Network;
+using Cosmos.HAL;
+using Cosmos.System.Network.Config;
+using Cosmos.System.Network.IPv4;
+using Cosmos.System.Network.IPv4.UDP.DNS;
+using Cosmos.System.Network.IPv4.UDP;
+using Cosmos.Core;
 
-
-
-
+///Source Code for the Kernal Commands
 namespace BridgesOS
 {
     public class Kernel : Sys.Kernel
     {
-        public static Canvas canvas = new VBECanvas(new Mode(1920, 1080, ColorDepth.ColorDepth32));
+
+        
         Sys.FileSystem.CosmosVFS fs = new Cosmos.System.FileSystem.CosmosVFS();
-          
+
+        //[ManifestResourceStream(ResourceName = "BridgesOS.welcome.wav")] public static byte[] music;
+        /// Before Kernal Starts 
         protected override void BeforeRun()
         {
             Sys.FileSystem.VFS.VFSManager.RegisterVFS(fs);
 
+
+            ///Audio does not work well with VMWARE
+            
+
+            /* var mixer = new AudioMixer();
+             var audioStream = MemoryAudioStream.FromWave(music);
+
+             var driver = AC97.Initialize(bufferSize: 4096);
+
+             mixer.Streams.Add(audioStream);
+
+             var audioManager = new AudioManager()
+             {
+                 Stream = mixer,
+                 Output = driver
+             };
+             audioManager.Enable(); */
+
+            ///Networking in Progress
+            NetworkDevice nic = NetworkDevice.GetDeviceByName("eth0"); //get network device by name
+            IPConfig.Enable(nic, new Address(192, 168, 1, 69), new Address(255, 255, 255, 0), new Address(192, 168, 1, 254)); //enable IPv4 configuration
+
+           
             Console.ForegroundColor = ConsoleColor.DarkGreen;
             Console.WriteLine("Welcome Too Bridges OS. Please Type in a command or type help for info" + " _          _     _                 \r\n | |__  _ __(_) __| | __ _  ___  ___ \r\n | '_ \\| '__| |/ _` |/ _` |/ _ \\/ __|\r\n | |_) | |  | | (_| | (_| |  __/\\__ \\\r\n |_.__/|_|  |_|\\__,_|\\__, |\\___||___/\r\n                     |___/           ");
+            //Console.WriteLine(NetworkConfiguration.CurrentAddress.ToString());
+
 
         }
-
+        /// Start of Kernal     
+    
         protected override void Run()
         {
-
             Console.Write("Input:");
 
             string command = Console.ReadLine();
-
+            ///All commands are stored in cases 
             switch (command)
             {
 
@@ -68,7 +103,13 @@ namespace BridgesOS
 
                         Console.WriteLine("filecommands - shows all file and dir commands ");
 
-                        Console.WriteLine("Dnd - plays a small demo of the fansaty game D&D");
+                        Console.WriteLine("DnD - plays a small demo of the fansaty game D&D");
+
+                        Console.WriteLine("settings - shows settings commands");
+
+                        Console.WriteLine("DNS - a simple DNS server that sends data to gain a IP");
+
+                        Console.WriteLine("poweroff - turns off the system");
                         break;
 
                     }
@@ -92,22 +133,23 @@ namespace BridgesOS
                         Console.WriteLine("writefile - write into file");
 
                         Console.WriteLine("readfile - read from file");
-
-
+                     
                         break;
                     }
 
-                case "musiclist":
+                case "settings":
                     {
+                        Console.WriteLine(" ____       _   _   _                 \r\n/ ___|  ___| |_| |_(_)_ __   __ _ ___ \r\n\\___ \\ / _ \\ __| __| | '_ \\ / _` / __|\r\n ___) |  __/ |_| |_| | | | | (_| \\__ \\\r\n|____/ \\___|\\__|\\__|_|_| |_|\\__, |___/\r\n                            |___/     ");
+                       
+                        Console.WriteLine("IP - Shows IP Address ");
 
-                        Console.WriteLine("fortniteOST - plays fornite ost");
+                        Console.WriteLine("raminfo - gives info on ram usage and avaibility");
 
-
-
+                        Console.WriteLine("diskcleanup - cleans up data not being used");
                         break;
                     }
 
-
+              
                 case "about":
 
                     {
@@ -139,7 +181,7 @@ namespace BridgesOS
                     {
 
                         Console.WriteLine("                                                                      \r\n                                           @@%%%%%%%@@@@                                            \r\n                                          @%#*++===++*%@@                                           \r\n                                        #%%###+*=-+*++#@                                            \r\n                                        ###+=-+#=---:-+*                                            \r\n                                          #++-=------+                                              \r\n                                   @@@@@@@*%%%%***#%%@                                              \r\n                               @@@@@@@@@@%%*++++#-:---+@@@@@@                                       \r\n                               @%%%%%%%%%%%#-=*#**......:%%%@@@@                                    \r\n                               %%%%%%%%%%%#%%#%%*#+-:::-#%%%%@@@                                    \r\n                               %%%%%%%%%%%%%##%#-==:.....#%%@@@@@                                   \r\n                               %%%%%%@%%%%%%%@@@@#--::---#@@@@@@@@                                  \r\n                               @@@%%%%@%%%@@@@@@@#%%%@%++*#%%%%%@@@@            ");
-                        //audio added here
+
                         break;
                     }
                 case "singraph":
@@ -170,9 +212,6 @@ namespace BridgesOS
 
                             int result = num1 + num2;
                             Console.WriteLine($"Addition: {result}");
-
-                            int result2 = num1 * num2;
-                            Console.WriteLine($"Mult: {result2}");
 
                             Console.Write("Do you want to continue (y/n)? ");
                             value = Console.ReadLine();
@@ -326,13 +365,34 @@ namespace BridgesOS
 
                     }
 
-                case "fortniteOST":
-                    {
 
-                        //Audio.Play("");
+                case "DNS":
+                    {
+                        using (var xClient = new DnsClient())
+                        {
+                            xClient.Connect(new Address(8, 8, 8, 8)); //DNS Server address. We recommend a Google or Cloudflare DNS, but you can use any you like!
+
+                            /** Send DNS ask for a single domain name **/
+                            xClient.SendAsk("github.com");
+
+                            /** Receive DNS Response **/
+                            Address destination = xClient.Receive(); //can set a timeout value
+                            
+                        }
+
                         break;
                     }
+
                
+
+                case "IP":
+                    {
+                        Console.WriteLine(NetworkConfiguration.CurrentAddress.ToString());
+
+                        break;
+                    }
+
+                    ///Small DND Game
                 case "DnD":
                     {
 
@@ -382,18 +442,25 @@ namespace BridgesOS
                         
                        break;
                     }
-              /*  case "gui":
+
+                case "raminfo":
                     {
-                        canvas.DrawFilledRectangle( Color. , 0, 0, 1920, 1080);
-                        
-                        
-                        
+                        GCImplementation.GetAvailableRAM();
+                        GCImplementation.GetUsedRAM();
+
                         break;
                     }
-                 */
-                    
+                case "diskcleanup":
+                    {
+                        Heap.Collect();
+                        break;
+                    }
 
-
+                case "poweroff":
+                    {
+                        Sys.Power.Shutdown();
+                        break;
+                    }
                 default:
                     {
                         Console.WriteLine("No such command");
